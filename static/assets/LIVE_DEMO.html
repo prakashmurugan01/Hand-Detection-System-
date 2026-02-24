@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HandSense Pro — Live Interactive Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@200;300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --teal:#00FFD1;
+  --cyan:#00BFFF;
+  --plasma:#FF2D78;
+  --gold:#FFD700;
+  --bg:#02040A;
+  --s1:#060C18;
+  --s2:#0A1428;
+  --panel:#08102080;
+  --border:rgba(0,255,209,0.15);
+  --text:#C8E6FF;
+  --dim:#3A5070;
+  --font-mono:'Share Tech Mono',monospace;
+  --font-body:'Exo 2',sans-serif;
+}
+
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--font-body);color:var(--text);}
+
+/* ── animated bg ── */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 50%,rgba(0,191,255,0.04) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 60% at 80% 30%,rgba(0,255,209,0.03) 0%,transparent 70%),
+    radial-gradient(ellipse 40% 50% at 60% 80%,rgba(255,45,120,0.03) 0%,transparent 70%);
+  pointer-events:none;z-index:0;
+}
+/* grid */
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(0,255,209,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,255,209,0.025) 1px,transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;z-index:0;
+}
+
+.root{position:relative;z-index:1;width:100vw;height:100vh;display:grid;grid-template-rows:56px 1fr;overflow:hidden;}
+
+/* ── HEADER ── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;
+  background:rgba(6,12,24,0.95);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(20px);
+}
+.hdr-left{display:flex;align-items:center;gap:14px;}
+.logo-box{
+  width:36px;height:36px;border-radius:8px;
+  background:linear-gradient(135deg,var(--teal),var(--cyan));
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;box-shadow:0 0 20px rgba(0,255,209,0.5);
+  flex-shrink:0;
+}
+.brand{font-family:var(--font-mono);font-size:1.1rem;letter-spacing:3px;
+  background:linear-gradient(90deg,var(--teal),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.brand-ver{font-size:0.6rem;color:var(--dim);letter-spacing:4px;text-transform:uppercase;margin-top:-4px;}
+
+.hdr-badges{display:flex;gap:8px;align-items:center;}
+.badge{
+  font-family:var(--font-mono);font-size:0.65rem;letter-spacing:1.5px;
+  padding:4px 10px;border-radius:4px;text-transform:uppercase;
+}
+.badge.live{background:rgba(0,255,209,0.1);border:1px solid rgba(0,255,209,0.3);color:var(--teal);}
+.badge.fps{background:rgba(0,191,255,0.1);border:1px solid rgba(0,191,255,0.25);color:var(--cyan);}
+.badge.mode-badge{background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);color:var(--gold);}
+
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--teal);
+  box-shadow:0 0 8px var(--teal);animation:blink 1.2s ease-in-out infinite;display:inline-block;margin-right:4px;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ── LAYOUT ── */
+.body-grid{
+  display:grid;
+  grid-template-columns:220px 1fr 220px;
+  overflow:hidden;height:100%;
+}
+
+/* ── SIDEBARS ── */
+.sidebar{
+  background:rgba(8,16,32,0.85);
+  border-right:1px solid var(--border);
+  padding:14px 12px;
+  display:flex;flex-direction:column;gap:14px;
+  overflow-y:auto;
+}
+.sidebar.r{border-right:none;border-left:1px solid var(--border);}
+
+.sec-head{
+  font-family:var(--font-mono);font-size:0.55rem;letter-spacing:3px;
+  color:var(--dim);text-transform:uppercase;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+  padding-bottom:6px;margin-bottom:2px;
+}
+
+/* mode buttons */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.m-btn{
+  padding:10px 4px;border-radius:8px;cursor:pointer;
+  background:rgba(10,20,40,0.8);
+  border:1px solid var(--border);
+  color:var(--dim);font-family:var(--font-body);font-size:0.75rem;font-weight:600;
+  letter-spacing:0.5px;text-align:center;
+  transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.m-btn .mi{font-size:1.3rem;}
+.m-btn:hover{border-color:var(--teal);color:var(--teal);background:rgba(0,255,209,0.06);}
+.m-btn.active{
+  border-color:var(--teal);color:var(--teal);
+  background:rgba(0,255,209,0.1);
+  box-shadow:0 0 12px rgba(0,255,209,0.2);
+}
+
+/* sliders */
+.ctrl-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.ctrl-lbl{font-size:0.72rem;color:var(--dim);}
+.ctrl-val{font-family:var(--font-mono);font-size:0.68rem;color:var(--teal);}
+input[type=range]{-webkit-appearance:none;width:100%;height:3px;border-radius:2px;background:rgba(255,255,255,0.08);cursor:pointer;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--teal);box-shadow:0 0 6px var(--teal);}
+
+/* color swatches */
+.palette{display:flex;flex-wrap:wrap;gap:5px;}
+.swatch{width:26px;height:26px;border-radius:5px;cursor:pointer;border:2px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.swatch:hover,.swatch.active{border-color:#fff;transform:scale(1.2);box-shadow:0 0 8px currentColor;}
+
+/* action btns */
+.a-btn{
+  width:100%;padding:8px;border-radius:7px;
+  background:transparent;border:1px solid var(--border);
+  color:var(--text);cursor:pointer;
+  font-family:var(--font-body);font-size:0.75rem;font-weight:600;
+  letter-spacing:0.5px;text-transform:uppercase;
+  transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:5px;
+}
+.a-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.a-btn.danger:hover{border-color:var(--plasma);color:var(--plasma);}
+.a-btn.primary{
+  background:linear-gradient(135deg,var(--teal),var(--cyan));
+  border:none;color:#000;font-weight:700;
+}
+
+/* ── CANVAS PANEL ── */
+.canvas-panel{position:relative;overflow:hidden;background:#000;}
+
+#mainCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;}
+#drawCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+#uiCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+
+/* corner decorations */
+.corners{position:absolute;inset:0;pointer-events:none;}
+.corner{position:absolute;width:18px;height:18px;border-color:var(--teal);border-style:solid;opacity:0.5;}
+.corner.tl{top:8px;left:8px;border-width:2px 0 0 2px;}
+.corner.tr{top:8px;right:8px;border-width:2px 2px 0 0;}
+.corner.bl{bottom:8px;left:8px;border-width:0 0 2px 2px;}
+.corner.br{bottom:8px;right:8px;border-width:0 2px 2px 0;}
+
+/* scan line */
+.scanline{
+  position:absolute;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--teal),transparent);
+  animation:scan 5s linear infinite;pointer-events:none;opacity:0.4;
+}
+@keyframes scan{0%{top:0}100%{top:100%}}
+
+/* instructions overlay */
+.instr{
+  position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+  font-family:var(--font-mono);font-size:0.65rem;letter-spacing:2px;
+  color:rgba(0,255,209,0.5);text-align:center;pointer-events:none;
+  text-transform:uppercase;
+  animation:fadepulse 3s ease-in-out infinite;
+}
+@keyframes fadepulse{0%,100%{opacity:0.5}50%{opacity:0.9}}
+
+/* ── RIGHT PANEL STATS ── */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.stat-card{
+  background:rgba(10,20,40,0.8);border:1px solid var(--border);
+  border-radius:8px;padding:10px 10px;
+}
+.sc-label{font-size:0.58rem;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:4px;}
+.sc-val{font-family:var(--font-mono);font-size:1.1rem;color:var(--teal);}
+.sc-sub{font-size:0.65rem;color:var(--dim);margin-top:1px;}
+
+/* gesture display */
+.gest-box{
+  background:rgba(10,20,40,0.8);border:1px solid var(--border);
+  border-radius:10px;padding:14px;text-align:center;
+}
+.gest-emoji{font-size:2.8rem;transition:all 0.3s;filter:drop-shadow(0 0 12px rgba(0,255,209,0.4));}
+.gest-lbl{font-family:var(--font-mono);font-size:0.7rem;color:var(--teal);margin-top:6px;letter-spacing:1.5px;text-transform:uppercase;}
+
+/* hand skeleton canvas */
+.skel-wrap{background:rgba(10,20,40,0.8);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+#skelCanvas{width:100%;display:block;}
+
+/* event log */
+.elog{
+  background:rgba(10,20,40,0.8);border:1px solid var(--border);
+  border-radius:8px;padding:8px;height:120px;overflow-y:auto;
+  font-family:var(--font-mono);font-size:0.62rem;
+}
+.elog::-webkit-scrollbar{width:3px;}
+.elog::-webkit-scrollbar-thumb{background:var(--border);}
+.elog-row{padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.03);color:var(--dim);}
+.elog-row.hi{color:var(--teal);}
+.elog-row.warn{color:var(--gold);}
+.elog-t{color:var(--cyan);margin-right:6px;}
+
+/* velocity bar */
+.vel-bar-wrap{background:rgba(0,0,0,0.3);border-radius:3px;height:5px;overflow:hidden;}
+.vel-bar{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--teal),var(--cyan));transition:width 0.1s;}
+
+/* finger indicators */
+.finger-row{display:flex;gap:4px;justify-content:center;}
+.finger-ind{
+  width:20px;height:36px;border-radius:10px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08);
+  display:flex;align-items:flex-end;justify-content:center;
+  padding-bottom:3px;font-size:0.55rem;color:var(--dim);
+  transition:all 0.15s;flex-direction:column;align-items:center;gap:2px;
+}
+.finger-ind.up{
+  background:rgba(0,255,209,0.15);border-color:var(--teal);color:var(--teal);
+  box-shadow:0 0 8px rgba(0,255,209,0.2);
+}
+.finger-dot{width:8px;height:8px;border-radius:50%;background:var(--dim);margin-top:4px;transition:all 0.15s;}
+.finger-ind.up .finger-dot{background:var(--teal);box-shadow:0 0 6px var(--teal);}
+
+/* scrollbar */
+.sidebar::-webkit-scrollbar{width:3px;}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+</style>
+</head>
+<body>
+<div class="root">
+  <!-- HEADER -->
+  <header>
+    <div class="hdr-left">
+      <div class="logo-box">🖐️</div>
+      <div>
+        <div class="brand">HANDSENSE PRO</div>
+        <div class="brand-ver">v2.0 · Real-Time Interaction System</div>
+      </div>
+    </div>
+    <div class="hdr-badges">
+      <div class="badge live"><span class="live-dot"></span>LIVE DEMO</div>
+      <div class="badge fps">FPS: <span id="fpsHdr">60</span></div>
+      <div class="badge mode-badge" id="modeBadge">MODE: DRAW</div>
+    </div>
+  </header>
+
+  <!-- BODY -->
+  <div class="body-grid">
+
+    <!-- LEFT -->
+    <aside class="sidebar">
+      <div>
+        <div class="sec-head">Interaction Mode</div>
+        <div class="mode-grid">
+          <button class="m-btn" data-mode="detect"><span class="mi">👁️</span>Detect</button>
+          <button class="m-btn active" data-mode="draw"><span class="mi">✏️</span>Draw</button>
+          <button class="m-btn" data-mode="signature"><span class="mi">✍️</span>Sign</button>
+          <button class="m-btn" data-mode="trails"><span class="mi">🌊</span>Trails</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="sec-head">Brush</div>
+        <div class="ctrl-row"><span class="ctrl-lbl">Size</span><span class="ctrl-val" id="bsVal">8px</span></div>
+        <input type="range" id="brushSize" min="2" max="30" value="8">
+        <div class="ctrl-row" style="margin-top:8px;"><span class="ctrl-lbl">Opacity</span><span class="ctrl-val" id="boVal">100%</span></div>
+        <input type="range" id="brushOpacity" min="20" max="100" value="100">
+        <div class="ctrl-row" style="margin-top:8px;"><span class="ctrl-lbl">Smoothing</span><span class="ctrl-val" id="smVal">5</span></div>
+        <input type="range" id="smoothing" min="1" max="10" value="5">
+      </div>
+
+      <div>
+        <div class="sec-head">Color</div>
+        <div class="palette" id="palette">
+          <div class="swatch active" data-c="rgba(255,255,255,1)"     style="background:#fff;"></div>
+          <div class="swatch"        data-c="rgba(0,255,209,1)"       style="background:#00ffd1;"></div>
+          <div class="swatch"        data-c="rgba(0,191,255,1)"       style="background:#00bfff;"></div>
+          <div class="swatch"        data-c="rgba(255,45,120,1)"      style="background:#ff2d78;"></div>
+          <div class="swatch"        data-c="rgba(255,215,0,1)"       style="background:#ffd700;"></div>
+          <div class="swatch"        data-c="rgba(180,0,255,1)"       style="background:#b400ff;"></div>
+          <div class="swatch"        data-c="rgba(255,100,0,1)"       style="background:#ff6400;"></div>
+          <div class="swatch"        data-c="rgba(50,255,50,1)"       style="background:#32ff32;"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sec-head">Effects</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.75rem;color:var(--dim);cursor:pointer;">
+            <input type="checkbox" id="glowFx" checked style="accent-color:var(--teal);"> Glow Effect
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.75rem;color:var(--dim);cursor:pointer;">
+            <input type="checkbox" id="particleFx" checked style="accent-color:var(--teal);"> Particles
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.75rem;color:var(--dim);cursor:pointer;">
+            <input type="checkbox" id="trailFx" style="accent-color:var(--teal);"> Motion Trail
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.75rem;color:var(--dim);cursor:pointer;">
+            <input type="checkbox" id="gridFx" style="accent-color:var(--teal);"> Warp Grid
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div class="sec-head">Canvas</div>
+        <button class="a-btn" id="clearBtn">🗑️ Clear Canvas</button>
+        <button class="a-btn" id="saveBtn">💾 Save PNG</button>
+        <button class="a-btn danger" id="resetBtn">↺ Reset</button>
+      </div>
+    </aside>
+
+    <!-- CENTER CANVAS -->
+    <section class="canvas-panel" id="canvasPanel">
+      <canvas id="mainCanvas"></canvas>
+      <canvas id="drawCanvas"></canvas>
+      <canvas id="uiCanvas"></canvas>
+      <div class="corners">
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+      </div>
+      <div class="scanline"></div>
+      <div class="instr" id="instrTxt">MOVE MOUSE TO DRAW · CLICK TO TOGGLE PEN</div>
+    </section>
+
+    <!-- RIGHT -->
+    <aside class="sidebar r">
+      <div>
+        <div class="sec-head">Live Stats</div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="sc-label">Fingers</div><div class="sc-val" id="sFingers">5</div><div class="sc-sub">detected</div></div>
+          <div class="stat-card"><div class="sc-label">Speed</div><div class="sc-val" id="sSpeed">0</div><div class="sc-sub">px/frame</div></div>
+          <div class="stat-card"><div class="sc-label">Strokes</div><div class="sc-val" id="sStrokes">0</div><div class="sc-sub">total</div></div>
+          <div class="stat-card"><div class="sc-label">Points</div><div class="sc-val" id="sPoints">0</div><div class="sc-sub">drawn</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sec-head">Gesture</div>
+        <div class="gest-box">
+          <div class="gest-emoji" id="gEmoji">✏️</div>
+          <div class="gest-lbl" id="gLabel">DRAWING</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sec-head">Fingers</div>
+        <div class="finger-row" id="fingerRow">
+          <div class="finger-ind up" data-f="0"><div class="finger-dot"></div><span>T</span></div>
+          <div class="finger-ind up" data-f="1"><div class="finger-dot"></div><span>I</span></div>
+          <div class="finger-ind up" data-f="2"><div class="finger-dot"></div><span>M</span></div>
+          <div class="finger-ind up" data-f="3"><div class="finger-dot"></div><span>R</span></div>
+          <div class="finger-ind up" data-f="4"><div class="finger-dot"></div><span>P</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sec-head">Hand Skeleton</div>
+        <div class="skel-wrap"><canvas id="skelCanvas" width="196" height="160"></canvas></div>
+      </div>
+
+      <div>
+        <div class="sec-head">Velocity</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+            <span style="font-size:0.65rem;color:var(--dim);">X-AXIS</span>
+            <span class="ctrl-val" id="velX">0</span>
+          </div>
+          <div class="vel-bar-wrap"><div class="vel-bar" id="velBarX" style="width:0%"></div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;margin-bottom:2px;">
+            <span style="font-size:0.65rem;color:var(--dim);">Y-AXIS</span>
+            <span class="ctrl-val" id="velY">0</span>
+          </div>
+          <div class="vel-bar-wrap"><div class="vel-bar" id="velBarY" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sec-head">Event Log</div>
+        <div class="elog" id="elog">
+          <div class="elog-row hi"><span class="elog-t">00:00:00</span>System initialized</div>
+          <div class="elog-row"><span class="elog-t">00:00:00</span>Camera simulation active</div>
+          <div class="elog-row warn"><span class="elog-t">00:00:00</span>Mode: DRAW</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+// ─── Canvas Setup ─────────────────────────────────────────────────────────────
+const panel      = document.getElementById('canvasPanel');
+const mainCvs    = document.getElementById('mainCanvas');
+const drawCvs    = document.getElementById('drawCanvas');
+const uiCvs      = document.getElementById('uiCanvas');
+const skelCvs    = document.getElementById('skelCanvas');
+const mainCtx    = mainCvs.getContext('2d');
+const drawCtx    = drawCvs.getContext('2d');
+const uiCtx      = uiCvs.getContext('2d');
+const skelCtx    = skelCvs.getContext('2d');
+
+let W = 0, H = 0;
+function resize() {
+  const r = panel.getBoundingClientRect();
+  W = r.width; H = r.height;
+  [mainCvs, drawCvs, uiCvs].forEach(c => { c.width = W; c.height = H; });
+  drawGrid();
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let mode        = 'draw';
+let brushSize   = 8;
+let brushOpacity= 1;
+let smoothing   = 5;
+let brushColor  = 'rgba(255,255,255,1)';
+let glowFx      = true;
+let particleFx  = true;
+let trailFx     = false;
+let gridFx      = false;
+let penDown     = false;
+let autoMode    = false; // mouse controls pen
+
+let mx = W/2, my = H/2, px = W/2, py = H/2;
+let vx = 0, vy = 0;
+let strokes = 0, totalPoints = 0;
+let fps = 60, lastFrame = performance.now(), frames = 0;
+let particles = [];
+let trailPoints = [];
+let handSkelAnim = 0;
+let warpGrid = [];
+
+// ─── Grid ─────────────────────────────────────────────────────────────────────
+function drawGrid() {
+  mainCtx.clearRect(0,0,W,H);
+  mainCtx.fillStyle = '#000';
+  mainCtx.fillRect(0,0,W,H);
+
+  // Subtle grid
+  mainCtx.strokeStyle = 'rgba(0,255,209,0.04)';
+  mainCtx.lineWidth = 1;
+  for(let x=0;x<W;x+=48){ mainCtx.beginPath();mainCtx.moveTo(x,0);mainCtx.lineTo(x,H);mainCtx.stroke(); }
+  for(let y=0;y<H;y+=48){ mainCtx.beginPath();mainCtx.moveTo(0,y);mainCtx.lineTo(W,y);mainCtx.stroke(); }
+
+  // Gradient overlays
+  const gx = mainCtx.createRadialGradient(W*0.3,H*0.5,0,W*0.3,H*0.5,W*0.4);
+  gx.addColorStop(0,'rgba(0,191,255,0.04)');
+  gx.addColorStop(1,'transparent');
+  mainCtx.fillStyle = gx; mainCtx.fillRect(0,0,W,H);
+
+  const gy = mainCtx.createRadialGradient(W*0.7,H*0.3,0,W*0.7,H*0.3,W*0.35);
+  gy.addColorStop(0,'rgba(0,255,209,0.03)');
+  gy.addColorStop(1,'transparent');
+  mainCtx.fillStyle = gy; mainCtx.fillRect(0,0,W,H);
+}
+
+// ─── Mouse / Touch input ──────────────────────────────────────────────────────
+let isDrawing = false;
+
+panel.addEventListener('mousemove', e => {
+  const r = panel.getBoundingClientRect();
+  px = mx; py = my;
+  mx = e.clientX - r.left;
+  my = e.clientY - r.top;
+  vx = mx - px; vy = my - py;
+  updateVelocity();
+  updateHand();
+  if(isDrawing && penDown) doStroke(px, py, mx, my);
+});
+
+panel.addEventListener('mousedown', e => {
+  isDrawing = true;
+  const r = panel.getBoundingClientRect();
+  mx = e.clientX - r.left;
+  my = e.clientY - r.top;
+  px = mx; py = my;
+  if(penDown){ strokes++; document.getElementById('sStrokes').textContent=strokes; }
+});
+
+panel.addEventListener('mouseup', () => { isDrawing = false; });
+panel.addEventListener('mouseleave', () => { isDrawing = false; });
+
+panel.addEventListener('click', e => {
+  if(!autoMode){
+    penDown = !penDown;
+    updateGestureDisplay();
+    addLog(penDown ? 'Pen DOWN — drawing active' : 'Pen UP — lifted', penDown?'hi':'');
+  }
+});
+
+// Touch
+panel.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const r = panel.getBoundingClientRect();
+  const t = e.touches[0];
+  px = mx; py = my;
+  mx = t.clientX - r.left; my = t.clientY - r.top;
+  vx = mx-px; vy = my-py;
+  updateVelocity();
+  updateHand();
+  if(penDown) doStroke(px,py,mx,my);
+},{passive:false});
+panel.addEventListener('touchstart', e=>{ penDown=true; e.preventDefault(); },{passive:false});
+panel.addEventListener('touchend', ()=>{ penDown=false; });
+
+// ─── Drawing ──────────────────────────────────────────────────────────────────
+function doStroke(x1,y1,x2,y2){
+  if(mode==='detect') return;
+
+  drawCtx.save();
+  if(glowFx){
+    drawCtx.shadowColor  = brushColor;
+    drawCtx.shadowBlur   = brushSize * 2;
+  }
+  drawCtx.strokeStyle = brushColor.replace(',1)',',' + brushOpacity + ')');
+  drawCtx.lineWidth   = brushSize;
+  drawCtx.lineCap     = 'round';
+  drawCtx.lineJoin    = 'round';
+  drawCtx.globalAlpha = brushOpacity;
+  drawCtx.beginPath();
+  drawCtx.moveTo(x1,y1);
+  drawCtx.lineTo(x2,y2);
+  drawCtx.stroke();
+  drawCtx.restore();
+
+  totalPoints++;
+  document.getElementById('sPoints').textContent = totalPoints;
+
+  if(particleFx && Math.random()<0.3) spawnParticle(x2,y2);
+  if(trailFx){ trailPoints.push({x:x2,y:y2,t:Date.now(),c:brushColor}); if(trailPoints.length>80) trailPoints.shift(); }
+}
+
+// ─── Particles ────────────────────────────────────────────────────────────────
+function spawnParticle(x,y){
+  const ang = Math.random()*Math.PI*2;
+  const spd = 1+Math.random()*3;
+  particles.push({
+    x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,
+    life:1,decay:0.03+Math.random()*0.04,
+    r:brushSize*(0.2+Math.random()*0.4),
+    color:brushColor
+  });
+}
+
+// ─── Hand Skeleton Animation ──────────────────────────────────────────────────
+const SKEL_CONNECTIONS = [
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [0,9],[9,10],[10,11],[11,12],
+  [0,13],[13,14],[14,15],[15,16],
+  [0,17],[17,18],[18,19],[19,20],
+  [5,9],[9,13],[13,17]
+];
+
+// Base hand shape (normalized 0-1)
+const BASE_HAND = [
+  [0.5,0.9],[0.3,0.75],[0.2,0.6],[0.15,0.5],[0.1,0.4],
+  [0.35,0.55],[0.32,0.35],[0.3,0.2],[0.28,0.1],
+  [0.48,0.5],[0.46,0.28],[0.45,0.14],[0.44,0.05],
+  [0.6,0.52],[0.6,0.32],[0.6,0.18],[0.6,0.08],
+  [0.72,0.58],[0.74,0.42],[0.75,0.3],[0.76,0.2]
+];
+
+function getFingersState(){
+  if(mode==='detect') return [1,0,0,0,0];
+  if(mode==='draw')   return [0,1,0,0,0];
+  if(mode==='signature') return [0,1,0,0,0];
+  if(mode==='trails') return [1,1,1,1,1];
+  return [1,1,0,0,0];
+}
+
+function drawSkeleton(){
+  const sw = skelCvs.width, sh = skelCvs.height;
+  skelCtx.clearRect(0,0,sw,sh);
+  skelCtx.fillStyle='#060C18'; skelCtx.fillRect(0,0,sw,sh);
+
+  const fingers = getFingersState();
+  const T = handSkelAnim;
+
+  // Compute animated points
+  const pts = BASE_HAND.map((p,i) => {
+    const isFingerTip = [4,8,12,16,20].includes(i);
+    const fingerIdx = i < 4 ? 0 : i < 8 ? 1 : i < 12 ? 2 : i < 16 ? 3 : 4;
+    let y = p[1];
+    if(isFingerTip && !fingers[fingerIdx]) y = y + 0.2;
+    const wave = Math.sin(T*0.02 + i*0.5)*0.008;
+    return { x: p[0]*sw + wave*sw, y: y*sh + Math.sin(T*0.015+i)*2 };
+  });
+
+  // Connections
+  skelCtx.strokeStyle='rgba(255,255,255,0.2)';skelCtx.lineWidth=1.5;
+  SKEL_CONNECTIONS.forEach(([a,b])=>{
+    skelCtx.beginPath();skelCtx.moveTo(pts[a].x,pts[a].y);skelCtx.lineTo(pts[b].x,pts[b].y);skelCtx.stroke();
+  });
+
+  // Points
+  pts.forEach((p,i)=>{
+    const isFingerTip=[4,8,12,16,20].includes(i);
+    skelCtx.beginPath();
+    skelCtx.arc(p.x,p.y,isFingerTip?5:2.5,0,Math.PI*2);
+    skelCtx.fillStyle = isFingerTip ? '#00FFD1' : '#00BFFF';
+    if(isFingerTip){
+      skelCtx.shadowColor='#00FFD1';skelCtx.shadowBlur=8;
+      skelCtx.fill();skelCtx.shadowBlur=0;
+    } else skelCtx.fill();
+  });
+
+  // Cursor crosshair
+  const nx = (mx/W)*sw, ny = (my/H)*sh;
+  skelCtx.strokeStyle='rgba(0,255,209,0.4)';skelCtx.lineWidth=1;
+  skelCtx.beginPath();skelCtx.moveTo(nx-8,ny);skelCtx.lineTo(nx+8,ny);skelCtx.stroke();
+  skelCtx.beginPath();skelCtx.moveTo(nx,ny-8);skelCtx.lineTo(nx,ny+8);skelCtx.stroke();
+}
+
+// ─── UI overlay ───────────────────────────────────────────────────────────────
+function drawUI(){
+  uiCtx.clearRect(0,0,W,H);
+
+  // Warp grid effect
+  if(gridFx){
+    const speed = Math.hypot(vx,vy);
+    if(speed > 2){
+      uiCtx.strokeStyle=`rgba(0,255,209,${Math.min(0.15,speed*0.005)})`;
+      uiCtx.lineWidth=1;
+      for(let x=0;x<W;x+=40){
+        const distort = Math.sin((x-mx)/50)*speed*0.3;
+        uiCtx.beginPath();uiCtx.moveTo(x+distort,0);uiCtx.lineTo(x-distort,H);uiCtx.stroke();
+      }
+    }
+  }
+
+  // Trail
+  if(trailFx && trailPoints.length>1){
+    for(let i=1;i<trailPoints.length;i++){
+      const a = (i/trailPoints.length)*0.6;
+      uiCtx.strokeStyle = trailPoints[i].c.replace(',1)',',' + a + ')');
+      uiCtx.lineWidth = brushSize*(i/trailPoints.length);
+      uiCtx.lineCap='round';
+      uiCtx.beginPath();uiCtx.moveTo(trailPoints[i-1].x,trailPoints[i-1].y);
+      uiCtx.lineTo(trailPoints[i].x,trailPoints[i].y);uiCtx.stroke();
+    }
+  }
+
+  // Particles
+  particles.forEach(p=>{
+    uiCtx.globalAlpha=p.life;
+    uiCtx.beginPath();uiCtx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    uiCtx.fillStyle=p.color;
+    if(glowFx){uiCtx.shadowColor=p.color;uiCtx.shadowBlur=6;}
+    uiCtx.fill();uiCtx.shadowBlur=0;
+  });
+  uiCtx.globalAlpha=1;
+
+  // Cursor / hand pointer
+  if(penDown && mode!=='detect'){
+    // Inner ring
+    uiCtx.beginPath();uiCtx.arc(mx,my,brushSize+4,0,Math.PI*2);
+    uiCtx.strokeStyle='rgba(0,255,209,0.8)';uiCtx.lineWidth=2;uiCtx.stroke();
+    // Outer pulse ring
+    const t = performance.now()*0.005;
+    const r2 = brushSize+8+Math.sin(t)*4;
+    uiCtx.beginPath();uiCtx.arc(mx,my,r2,0,Math.PI*2);
+    uiCtx.strokeStyle='rgba(0,255,209,0.25)';uiCtx.lineWidth=1;uiCtx.stroke();
+    // Center dot
+    uiCtx.beginPath();uiCtx.arc(mx,my,3,0,Math.PI*2);
+    uiCtx.fillStyle=brushColor;uiCtx.shadowColor=brushColor;uiCtx.shadowBlur=10;uiCtx.fill();uiCtx.shadowBlur=0;
+  } else {
+    // Crosshair cursor
+    const sz=12;
+    uiCtx.strokeStyle='rgba(0,255,209,0.6)';uiCtx.lineWidth=1.5;
+    uiCtx.beginPath();uiCtx.moveTo(mx-sz,my);uiCtx.lineTo(mx+sz,my);uiCtx.stroke();
+    uiCtx.beginPath();uiCtx.moveTo(mx,my-sz);uiCtx.lineTo(mx,my+sz);uiCtx.stroke();
+    uiCtx.beginPath();uiCtx.arc(mx,my,5,0,Math.PI*2);
+    uiCtx.strokeStyle='rgba(0,255,209,0.4)';uiCtx.lineWidth=1;uiCtx.stroke();
+  }
+
+  // HUD: current coords
+  uiCtx.font='10px Share Tech Mono';
+  uiCtx.fillStyle='rgba(0,255,209,0.5)';
+  uiCtx.fillText(`X:${Math.round(mx)} Y:${Math.round(my)}`, mx+14, my-6);
+}
+
+// ─── Animation Loop ───────────────────────────────────────────────────────────
+function tick(now){
+  requestAnimationFrame(tick);
+  handSkelAnim++;
+
+  // FPS
+  frames++;
+  if(now - lastFrame >= 1000){
+    fps = frames; frames = 0; lastFrame = now;
+    document.getElementById('fpsHdr').textContent = fps;
+  }
+
+  // Update particles
+  particles = particles.filter(p=>p.life>0);
+  particles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life-=p.decay; p.vx*=0.95; });
+
+  // Prune old trails
+  const now2 = Date.now();
+  trailPoints = trailPoints.filter(p=>now2-p.t<600);
+
+  drawUI();
+  drawSkeleton();
+  updateSpeedDisplay();
+}
+requestAnimationFrame(tick);
+
+// ─── Update functions ─────────────────────────────────────────────────────────
+function updateVelocity(){
+  const speed = Math.round(Math.hypot(vx,vy));
+  document.getElementById('sSpeed').textContent = speed;
+  document.getElementById('velX').textContent   = Math.round(Math.abs(vx));
+  document.getElementById('velY').textContent   = Math.round(Math.abs(vy));
+  document.getElementById('velBarX').style.width = Math.min(100, Math.abs(vx)*5) + '%';
+  document.getElementById('velBarY').style.width = Math.min(100, Math.abs(vy)*5) + '%';
+}
+function updateSpeedDisplay(){}
+
+function updateHand(){
+  // Animate finger indicators based on mode
+  const fingers = getFingersState();
+  document.querySelectorAll('.finger-ind').forEach((el,i)=>{
+    el.classList.toggle('up', !!fingers[i]);
+  });
+  const cnt = fingers.filter(Boolean).length;
+  document.getElementById('sFingers').textContent = cnt;
+}
+
+const GESTURE_MAP = {
+  detect:    { emoji:'👁️', label:'DETECTING'  },
+  draw:      { emoji:'✏️', label:'DRAWING'    },
+  signature: { emoji:'✍️', label:'SIGNING'    },
+  trails:    { emoji:'🌊', label:'TRAILS'     },
+};
+function updateGestureDisplay(){
+  const g = GESTURE_MAP[mode] || { emoji:'🤚', label:'IDLE' };
+  document.getElementById('gEmoji').textContent  = penDown ? g.emoji : '✋';
+  document.getElementById('gLabel').textContent  = penDown ? g.label : 'PEN UP';
+}
+
+// ─── Mode Buttons ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.m-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.m-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    mode = btn.dataset.mode;
+    document.getElementById('modeBadge').textContent = 'MODE: ' + mode.toUpperCase();
+    const instrs = {
+      detect:'HOVER TO TRACK · DETECTION ONLY',
+      draw:'CLICK TO TOGGLE PEN · MOVE MOUSE TO DRAW',
+      signature:'CLICK TO PEN DOWN · DRAW YOUR SIGNATURE',
+      trails:'CLICK PEN DOWN · MOVE FOR LIGHT TRAILS',
+    };
+    document.getElementById('instrTxt').textContent = instrs[mode] || '';
+    updateGestureDisplay();
+    updateHand();
+    addLog('Mode → ' + mode.toUpperCase(), 'warn');
+  });
+});
+
+// ─── Sliders ──────────────────────────────────────────────────────────────────
+document.getElementById('brushSize').addEventListener('input',function(){
+  brushSize=+this.value; document.getElementById('bsVal').textContent=this.value+'px';
+});
+document.getElementById('brushOpacity').addEventListener('input',function(){
+  brushOpacity=this.value/100; document.getElementById('boVal').textContent=this.value+'%';
+});
+document.getElementById('smoothing').addEventListener('input',function(){
+  smoothing=+this.value; document.getElementById('smVal').textContent=this.value;
+});
+
+// ─── Colors ───────────────────────────────────────────────────────────────────
+document.querySelectorAll('.swatch').forEach(sw=>{
+  sw.addEventListener('click',()=>{
+    document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active'));
+    sw.classList.add('active');
+    brushColor=sw.dataset.c;
+    addLog('Color changed','hi');
+  });
+});
+
+// ─── Effects ──────────────────────────────────────────────────────────────────
+document.getElementById('glowFx').addEventListener('change',function(){glowFx=this.checked;});
+document.getElementById('particleFx').addEventListener('change',function(){particleFx=this.checked;});
+document.getElementById('trailFx').addEventListener('change',function(){trailFx=this.checked;});
+document.getElementById('gridFx').addEventListener('change',function(){gridFx=this.checked;});
+
+// ─── Canvas Actions ───────────────────────────────────────────────────────────
+document.getElementById('clearBtn').addEventListener('click',()=>{
+  drawCtx.clearRect(0,0,W,H);
+  totalPoints=0; strokes=0;
+  document.getElementById('sPoints').textContent='0';
+  document.getElementById('sStrokes').textContent='0';
+  addLog('Canvas cleared','warn');
+});
+
+document.getElementById('saveBtn').addEventListener('click',()=>{
+  const save = document.createElement('canvas');
+  save.width=W; save.height=H;
+  const sc = save.getContext('2d');
+  sc.fillStyle='#000'; sc.fillRect(0,0,W,H);
+  sc.drawImage(drawCvs,0,0);
+  const a=document.createElement('a');
+  a.href=save.toDataURL('image/png');
+  a.download=`handsense_${Date.now()}.png`;
+  a.click();
+  addLog('Drawing saved as PNG','hi');
+});
+
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  drawCtx.clearRect(0,0,W,H);
+  particles=[];trailPoints=[];
+  totalPoints=0;strokes=0;penDown=false;
+  document.getElementById('sPoints').textContent='0';
+  document.getElementById('sStrokes').textContent='0';
+  updateGestureDisplay();
+  addLog('System reset','warn');
+});
+
+// ─── Event Log ────────────────────────────────────────────────────────────────
+function addLog(msg, type=''){
+  const log=document.getElementById('elog');
+  const t=new Date().toTimeString().slice(0,8);
+  const d=document.createElement('div');
+  d.className='elog-row '+(type||'');
+  d.innerHTML=`<span class="elog-t">${t}</span>${msg}`;
+  log.prepend(d);
+  while(log.children.length>60) log.removeChild(log.lastChild);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+penDown = true;
+updateGestureDisplay();
+updateHand();
+addLog('Draw mode ready — move mouse to paint','hi');
+addLog('Click anywhere to toggle pen up/down');
+addLog('Try the mode buttons on the left!');
+</script>
+</body>
+</html>

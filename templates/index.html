@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HandSense Pro 2.0 — Real-Time Interaction System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@200;300;400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+:root{
+  --teal:#00FFD1;--cyan:#00BFFF;--plasma:#FF2D78;
+  --gold:#FFD700;--violet:#A020F0;--lime:#39FF14;
+  --bg:#020812;--s1:#050E1C;--s2:#091525;--panel:#0D1E38CC;
+  --border:rgba(0,255,209,0.14);--border2:rgba(0,191,255,0.1);
+  --text:#C4DEFF;--dim:#2E4A6A;
+  --mono:'Share Tech Mono',monospace;
+  --body:'Exo 2',sans-serif;
+  --r:8px;
+}
+
+html,body{height:100%;background:var(--bg);font-family:var(--body);color:var(--text);overflow:hidden;}
+
+/* animated gradient background */
+body::before{content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 55%,rgba(0,191,255,0.06),transparent 65%),
+    radial-gradient(ellipse 60% 60% at 85% 25%,rgba(0,255,209,0.04),transparent 65%),
+    radial-gradient(ellipse 50% 70% at 55% 85%,rgba(160,32,240,0.03),transparent 65%);
+  pointer-events:none;animation:bgshift 20s ease-in-out infinite alternate;
+}
+@keyframes bgshift{0%{opacity:1}50%{opacity:0.7}100%{opacity:1}}
+
+/* grid */
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(0,255,209,0.022) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,255,209,0.022) 1px,transparent 1px);
+  background-size:52px 52px;
+}
+
+.root{position:relative;z-index:1;height:100vh;display:grid;grid-template-rows:52px 1fr;}
+
+/* ── HEADER ─────────────────────────────── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 22px;
+  background:rgba(5,14,28,0.96);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(24px);
+}
+.hdr-l{display:flex;align-items:center;gap:12px;}
+.logo-icon{width:34px;height:34px;border-radius:7px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--teal),var(--cyan));
+  display:flex;align-items:center;justify-content:center;font-size:17px;
+  box-shadow:0 0 18px rgba(0,255,209,0.55);}
+.brand-wrap{line-height:1;}
+.brand{font-family:var(--mono);font-size:1.05rem;letter-spacing:3px;
+  background:linear-gradient(90deg,var(--teal),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.brand-sub{font-size:0.55rem;color:var(--dim);letter-spacing:3.5px;text-transform:uppercase;}
+.hdr-badges{display:flex;gap:6px;align-items:center;}
+.hbadge{font-family:var(--mono);font-size:0.6rem;letter-spacing:1.5px;
+  padding:3px 9px;border-radius:3px;text-transform:uppercase;}
+.hbadge.live{background:rgba(0,255,209,0.08);border:1px solid rgba(0,255,209,0.28);color:var(--teal);}
+.hbadge.fps{background:rgba(0,191,255,0.08);border:1px solid rgba(0,191,255,0.22);color:var(--cyan);}
+.hbadge.mode{background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);color:var(--gold);}
+.ldot{width:6px;height:6px;border-radius:50%;background:var(--teal);
+  box-shadow:0 0 7px var(--teal);animation:bl 1.4s ease-in-out infinite;display:inline-block;margin-right:3px;}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:0.25}}
+
+/* ── LAYOUT ─────────────────────────────── */
+.layout{display:grid;grid-template-columns:200px 1fr 200px;height:100%;}
+
+/* ── SIDEBAR ─────────────────────────────── */
+.sb{background:rgba(5,14,28,0.88);padding:12px 10px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;}
+.sb.r{border-left:1px solid var(--border);}
+.sb.l{border-right:1px solid var(--border);}
+.sb::-webkit-scrollbar{width:2px;}.sb::-webkit-scrollbar-thumb{background:var(--border);}
+
+.sh{font-family:var(--mono);font-size:0.5rem;letter-spacing:3px;color:var(--dim);
+  text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.04);padding-bottom:5px;margin-bottom:2px;}
+
+/* mode buttons */
+.mg{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.mb{padding:9px 4px;border-radius:var(--r);cursor:pointer;
+  background:rgba(9,21,37,0.9);border:1px solid var(--border);
+  color:var(--dim);font-family:var(--body);font-size:0.7rem;font-weight:600;
+  letter-spacing:0.4px;text-align:center;transition:all 0.18s;
+  display:flex;flex-direction:column;align-items:center;gap:3px;}
+.mb .mi{font-size:1.1rem;}
+.mb:hover{border-color:var(--teal);color:var(--teal);background:rgba(0,255,209,0.05);}
+.mb.active{border-color:var(--teal);color:var(--teal);background:rgba(0,255,209,0.1);
+  box-shadow:0 0 10px rgba(0,255,209,0.18),inset 0 0 8px rgba(0,255,209,0.05);}
+
+/* sliders */
+.cr{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+.cl{font-size:0.68rem;color:var(--dim);}
+.cv{font-family:var(--mono);font-size:0.63rem;color:var(--teal);}
+input[type=range]{-webkit-appearance:none;width:100%;height:3px;border-radius:2px;
+  background:rgba(255,255,255,0.07);cursor:pointer;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;
+  border-radius:50%;background:var(--teal);box-shadow:0 0 5px var(--teal);}
+
+/* color palette */
+.pal{display:flex;flex-wrap:wrap;gap:4px;}
+.sw{width:22px;height:22px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:all 0.13s;}
+.sw:hover,.sw.a{border-color:#fff;transform:scale(1.2);box-shadow:0 0 6px currentColor;}
+
+/* action buttons */
+.ab{width:100%;padding:7px;border-radius:6px;background:transparent;
+  border:1px solid var(--border);color:var(--text);cursor:pointer;
+  font-family:var(--body);font-size:0.7rem;font-weight:600;
+  letter-spacing:0.4px;text-transform:uppercase;transition:all 0.18s;
+  display:flex;align-items:center;justify-content:center;gap:4px;}
+.ab:hover{border-color:var(--cyan);color:var(--cyan);}
+.ab.d:hover{border-color:var(--plasma);color:var(--plasma);}
+
+/* ── VIDEO PANEL ─────────────────────────── */
+.vp{position:relative;background:#000;overflow:hidden;display:flex;flex-direction:column;}
+.vc{position:relative;flex:1;}
+#vFeed{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:none;}
+.vph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
+.vph .ico{font-size:3.5rem;opacity:0.2;}
+.vph .txt{font-family:var(--mono);font-size:0.7rem;letter-spacing:2.5px;text-transform:uppercase;opacity:0.35;}
+
+/* scan line */
+.scan{position:absolute;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,255,209,0.6),transparent);
+  animation:sc 4.5s linear infinite;pointer-events:none;opacity:0;transition:opacity 0.3s;}
+.vc.on .scan{opacity:1;}
+@keyframes sc{0%{top:0}100%{top:100%}}
+
+/* corners */
+.cors{position:absolute;inset:0;pointer-events:none;}
+.co{position:absolute;width:16px;height:16px;border-color:var(--teal);border-style:solid;opacity:0.5;}
+.co.tl{top:7px;left:7px;border-width:2px 0 0 2px;}
+.co.tr{top:7px;right:7px;border-width:2px 2px 0 0;}
+.co.bl{bottom:7px;left:7px;border-width:0 0 2px 2px;}
+.co.br{bottom:7px;right:7px;border-width:0 2px 2px 0;}
+
+/* toolbar */
+.vtb{display:flex;align-items:center;justify-content:center;gap:9px;padding:9px 16px;
+  background:rgba(5,14,28,0.97);border-top:1px solid var(--border);}
+.tb{padding:7px 16px;border-radius:6px;border:1px solid var(--border);background:transparent;
+  color:var(--text);font-family:var(--body);font-size:0.8rem;font-weight:600;
+  cursor:pointer;transition:all 0.18s;display:flex;align-items:center;gap:5px;
+  text-transform:uppercase;letter-spacing:0.4px;}
+.tb.go{background:linear-gradient(135deg,var(--teal),var(--cyan));border:none;color:#000;font-weight:700;}
+.tb.stop{border-color:var(--plasma);color:var(--plasma);}
+.tb:hover{opacity:0.82;transform:translateY(-1px);}
+.tb:disabled{opacity:0.3;cursor:not-allowed;transform:none;}
+
+/* ── RIGHT STATS ─────────────────────────── */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.sc{background:rgba(9,21,37,0.9);border:1px solid var(--border);border-radius:7px;padding:8px 9px;}
+.sc .sl{font-size:0.55rem;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:3px;}
+.sc .sv{font-family:var(--mono);font-size:1.05rem;color:var(--teal);}
+.sc .ss{font-size:0.6rem;color:var(--dim);margin-top:1px;}
+
+/* gesture box */
+.gb{background:rgba(9,21,37,0.9);border:1px solid var(--border);border-radius:9px;padding:12px;text-align:center;}
+.ge{font-size:2.6rem;transition:all 0.25s;filter:drop-shadow(0 0 10px rgba(0,255,209,0.4));}
+.gl{font-family:var(--mono);font-size:0.65rem;color:var(--teal);margin-top:5px;letter-spacing:1.5px;text-transform:uppercase;}
+
+/* finger indicators */
+.fr{display:flex;gap:3px;justify-content:center;}
+.fi{width:18px;height:32px;border-radius:9px;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding-top:4px;gap:3px;transition:all 0.12s;font-size:0.5rem;color:var(--dim);}
+.fi.up{background:rgba(0,255,209,0.12);border-color:var(--teal);color:var(--teal);
+  box-shadow:0 0 7px rgba(0,255,209,0.18);}
+.fd{width:7px;height:7px;border-radius:50%;background:var(--dim);transition:all 0.12s;}
+.fi.up .fd{background:var(--teal);box-shadow:0 0 5px var(--teal);}
+
+/* skeleton */
+.skw{background:rgba(9,21,37,0.9);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+#skc{width:100%;display:block;}
+
+/* velocity bars */
+.vb-wrap{background:rgba(0,0,0,0.25);border-radius:2px;height:4px;overflow:hidden;}
+.vb{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--teal),var(--cyan));transition:width 0.08s;}
+
+/* log */
+.log{background:rgba(9,21,37,0.9);border:1px solid var(--border);border-radius:7px;
+  padding:7px;height:110px;overflow-y:auto;font-family:var(--mono);font-size:0.58rem;}
+.log::-webkit-scrollbar{width:2px;}.log::-webkit-scrollbar-thumb{background:var(--border);}
+.le{padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.025);color:var(--dim);}
+.le.hi{color:var(--teal);}.le.w{color:var(--gold);}
+.lt{color:var(--cyan);margin-right:5px;}
+
+/* hand count ring */
+.hring{width:48px;height:48px;position:relative;margin:0 auto;}
+.hring svg{transform:rotate(-90deg);}
+.hring-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:1.0rem;color:var(--teal);}
+</style>
+</head>
+<body>
+<div class="root">
+  <header>
+    <div class="hdr-l">
+      <div class="logo-icon">🖐️</div>
+      <div class="brand-wrap">
+        <div class="brand">HANDSENSE PRO</div>
+        <div class="brand-sub">v2.0 · Real-Time Interaction System</div>
+      </div>
+    </div>
+    <div class="hdr-badges">
+      <div class="hbadge live" id="statusBadge"><span class="ldot" id="ldot" style="display:none"></span>OFFLINE</div>
+      <div class="hbadge fps">FPS <span id="fpsH">--</span></div>
+      <div class="hbadge mode" id="modeH">MODE: DRAW</div>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- LEFT -->
+    <aside class="sb l">
+      <div>
+        <div class="sh">Mode</div>
+        <div class="mg">
+          <button class="mb" data-m="detect"><span class="mi">👁️</span>Detect</button>
+          <button class="mb active" data-m="draw"><span class="mi">✏️</span>Draw</button>
+          <button class="mb" data-m="signature"><span class="mi">✍️</span>Sign</button>
+          <button class="mb" data-m="mouse"><span class="mi">🖱️</span>Mouse</button>
+          <button class="mb" data-m="zoom"><span class="mi">🔍</span>Zoom</button>
+          <button class="mb" data-m="laser"><span class="mi">🔴</span>Laser</button>
+          <button class="mb" data-m="multi"><span class="mi">👐</span>Multi</button>
+          <button class="mb" data-m="detect"><span class="mi">📊</span>Stats</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="sh">Brush</div>
+        <div class="cr"><span class="cl">Size</span><span class="cv" id="bsv">8px</span></div>
+        <input type="range" id="bSize" min="2" max="35" value="8">
+        <div class="cr" style="margin-top:6px;"><span class="cl">Eraser</span><span class="cv" id="esv">45px</span></div>
+        <input type="range" id="eSize" min="10" max="80" value="45">
+        <div class="cr" style="margin-top:6px;"><span class="cl">Opacity</span><span class="cv" id="opv">100%</span></div>
+        <input type="range" id="opacity" min="10" max="100" value="100">
+      </div>
+
+      <div>
+        <div class="sh">Color</div>
+        <div class="pal" id="pal">
+          <div class="sw a" data-c="white"  style="background:#fff;"></div>
+          <div class="sw"   data-c="teal"   style="background:#00ffd1;"></div>
+          <div class="sw"   data-c="cyan"   style="background:#00bfff;"></div>
+          <div class="sw"   data-c="plasma" data-cv="pink" style="background:#ff2d78;"></div>
+          <div class="sw"   data-c="yellow" style="background:#ffd700;"></div>
+          <div class="sw"   data-c="purple" data-cv="violet" style="background:#a020f0;"></div>
+          <div class="sw"   data-c="orange" style="background:#ff6400;"></div>
+          <div class="sw"   data-c="lime"   style="background:#39ff14;"></div>
+          <div class="sw"   data-c="red"    style="background:#ff2020;"></div>
+          <div class="sw"   data-c="blue"   style="background:#3399ff;"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sh">Detection</div>
+        <div class="cr"><span class="cl">Detect</span><span class="cv" id="dcv">70%</span></div>
+        <input type="range" id="dConf" min="10" max="99" value="70">
+        <div class="cr" style="margin-top:6px;"><span class="cl">Track</span><span class="cv" id="tcv">50%</span></div>
+        <input type="range" id="tConf" min="10" max="99" value="50">
+        <div class="cr" style="margin-top:6px;">
+          <span class="cl">Trails</span>
+          <input type="checkbox" id="trailCk" style="accent-color:var(--teal);">
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div class="sh">Actions</div>
+        <button class="ab" id="clearBtn">🗑️ Clear</button>
+        <button class="ab" id="saveBtn">💾 Save PNG</button>
+        <button class="ab" id="snapBtn" disabled>📸 Snapshot</button>
+        <button class="ab d" id="resetBtn">↺ Reset</button>
+      </div>
+    </aside>
+
+    <!-- CENTER -->
+    <section class="vp">
+      <div class="vc" id="vc">
+        <div class="vph" id="vph">
+          <div class="ico">📷</div>
+          <div class="txt">Press Start to Activate</div>
+        </div>
+        <img id="vFeed" src="" alt="Feed"/>
+        <div class="scan"></div>
+        <div class="cors">
+          <div class="co tl"></div><div class="co tr"></div>
+          <div class="co bl"></div><div class="co br"></div>
+        </div>
+      </div>
+      <div class="vtb">
+        <button class="tb go"   id="startBtn">▶ Start</button>
+        <button class="tb stop" id="stopBtn" disabled>■ Stop</button>
+        <button class="tb"      id="snapBtn2" disabled>📸 Snap</button>
+        <button class="tb"      id="fullBtn">⛶ Full</button>
+      </div>
+    </section>
+
+    <!-- RIGHT -->
+    <aside class="sb r">
+      <div>
+        <div class="sh">Live Stats</div>
+        <div class="sg">
+          <div class="sc"><div class="sl">Hands</div><div class="sv" id="sH">0</div><div class="ss">detected</div></div>
+          <div class="sc"><div class="sl">Fingers</div><div class="sv" id="sF">0</div><div class="ss">up</div></div>
+          <div class="sc"><div class="sl">Speed</div><div class="sv" id="sSp">0</div><div class="ss">px/f</div></div>
+          <div class="sc"><div class="sl">Action</div><div class="sv" id="sAc" style="font-size:0.65rem;">IDLE</div><div class="ss">current</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sh">Gesture</div>
+        <div class="gb"><div class="ge" id="ge">🤚</div><div class="gl" id="gl">NONE</div></div>
+      </div>
+
+      <div>
+        <div class="sh">Fingers</div>
+        <div class="fr" id="fr">
+          <div class="fi" data-f="0"><div class="fd"></div><span>T</span></div>
+          <div class="fi" data-f="1"><div class="fd"></div><span>I</span></div>
+          <div class="fi" data-f="2"><div class="fd"></div><span>M</span></div>
+          <div class="fi" data-f="3"><div class="fd"></div><span>R</span></div>
+          <div class="fi" data-f="4"><div class="fd"></div><span>P</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sh">Hand Skeleton</div>
+        <div class="skw"><canvas id="skc" width="180" height="150"></canvas></div>
+      </div>
+
+      <div>
+        <div class="sh">Velocity</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div class="cr"><span class="cl">X</span><span class="cv" id="vX">0</span></div>
+          <div class="vb-wrap"><div class="vb" id="vBX" style="width:0%"></div></div>
+          <div class="cr" style="margin-top:3px;"><span class="cl">Y</span><span class="cv" id="vY">0</span></div>
+          <div class="vb-wrap"><div class="vb" id="vBY" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sh">Session Stats</div>
+        <div class="sg">
+          <div class="sc"><div class="sl">Strokes</div><div class="sv" id="stk">0</div></div>
+          <div class="sc"><div class="sl">Points</div><div class="sv" id="pts">0</div></div>
+          <div class="sc"><div class="sl">Clicks</div><div class="sv" id="clk">0</div></div>
+          <div class="sc"><div class="sl">FPS</div><div class="sv" id="fps2">0</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sh">Event Log</div>
+        <div class="log" id="log">
+          <div class="le hi"><span class="lt">00:00:00</span>HandSense Pro v2.0 ready</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+const socket = io();
+const ge = {
+  fist:'✊', thumb_up:'👍', index_point:'☝️', peace:'✌️',
+  gun:'🤙', three:'🤟', four_fingers:'🖖', open_hand:'🖐️',
+  rock_on:'🤘', pinky:'🤙', three_mid:'🤙', custom:'🤚',
+  spider:'🕷️', horns:'🤘', laser:'🔴', none:'👋'
+};
+
+// ── Socket ──────────────────────────────────────────────────────────────────
+socket.on('connected', () => log('WebSocket connected', 'hi'));
+socket.on('hand_data', (d) => {
+  document.getElementById('sH').textContent  = d.hand_count || 0;
+  document.getElementById('sF').textContent  = d.finger_count || 0;
+  document.getElementById('sAc').textContent = (d.action||'IDLE').toUpperCase();
+  document.getElementById('fps2').textContent= d.fps || 0;
+  document.getElementById('fpsH').textContent= d.fps || '--';
+  if(d.stats){
+    document.getElementById('stk').textContent = d.stats.strokes || 0;
+    document.getElementById('pts').textContent  = d.stats.points  || 0;
+    document.getElementById('clk').textContent  = d.stats.clicks  || 0;
+  }
+  const g = d.gesture || 'none';
+  document.getElementById('ge').textContent = ge[g] || '🤚';
+  document.getElementById('gl').textContent = g.replace(/_/g,' ').toUpperCase();
+
+  if(d.hands?.length){
+    const h = d.hands[0];
+    updateFingers(h.fingers_up || []);
+    const sp = h.velocity?.speed || 0;
+    document.getElementById('sSp').textContent = Math.round(sp);
+    const vxv = Math.abs(h.velocity?.vx||0), vyv = Math.abs(h.velocity?.vy||0);
+    document.getElementById('vX').textContent = Math.round(vxv);
+    document.getElementById('vY').textContent = Math.round(vyv);
+    document.getElementById('vBX').style.width = Math.min(100,vxv*4)+'%';
+    document.getElementById('vBY').style.width = Math.min(100,vyv*4)+'%';
+    drawSkeleton(h.landmarks);
+  }
+});
+
+// ── Skeleton ─────────────────────────────────────────────────────────────────
+const skc = document.getElementById('skc');
+const skx = skc.getContext('2d');
+const CONN = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[0,9],[9,10],[10,11],[11,12],
+              [0,13],[13,14],[14,15],[15,16],[0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]];
+
+function drawSkeleton(lms){
+  if(!lms?.length) return;
+  const W=skc.width,H=skc.height;
+  skx.clearRect(0,0,W,H);
+  skx.fillStyle='#060C18';skx.fillRect(0,0,W,H);
+  const xs=lms.map(l=>l.x),ys=lms.map(l=>l.y);
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  const pad=16;
+  const nx=x=>pad+(x-minX)/(maxX-minX+0.001)*(W-2*pad);
+  const ny=y=>pad+(y-minY)/(maxY-minY+0.001)*(H-2*pad);
+  skx.strokeStyle='rgba(255,255,255,0.18)';skx.lineWidth=1.5;
+  CONN.forEach(([a,b])=>{skx.beginPath();skx.moveTo(nx(lms[a].x),ny(lms[a].y));skx.lineTo(nx(lms[b].x),ny(lms[b].y));skx.stroke();});
+  lms.forEach((lm,i)=>{
+    const tip=[4,8,12,16,20].includes(i);
+    skx.beginPath();skx.arc(nx(lm.x),ny(lm.y),tip?4.5:2,0,Math.PI*2);
+    skx.fillStyle=tip?'#00FFD1':'#00BFFF';
+    if(tip){skx.shadowColor='#00FFD1';skx.shadowBlur=7;skx.fill();skx.shadowBlur=0;}
+    else skx.fill();
+  });
+}
+
+function updateFingers(fu){
+  document.querySelectorAll('.fi').forEach((el,i)=>{
+    el.classList.toggle('up',!!fu[i]);
+  });
+}
+
+// ── Camera Controls ──────────────────────────────────────────────────────────
+document.getElementById('startBtn').addEventListener('click', async()=>{
+  await fetch('/api/start',{method:'POST'});
+  const f=document.getElementById('vFeed');
+  f.src='/video_feed';f.style.display='block';
+  document.getElementById('vph').style.display='none';
+  document.getElementById('vc').classList.add('on');
+  document.getElementById('ldot').style.display='inline-block';
+  document.getElementById('statusBadge').innerHTML='<span class="ldot"></span>LIVE';
+  document.getElementById('startBtn').disabled=true;
+  document.getElementById('stopBtn').disabled=false;
+  document.getElementById('snapBtn').disabled=false;
+  document.getElementById('snapBtn2').disabled=false;
+  log('Camera started — streaming live','hi');
+});
+
+document.getElementById('stopBtn').addEventListener('click', async()=>{
+  await fetch('/api/stop',{method:'POST'});
+  const f=document.getElementById('vFeed');
+  f.src='';f.style.display='none';
+  document.getElementById('vph').style.display='flex';
+  document.getElementById('vc').classList.remove('on');
+  document.getElementById('statusBadge').textContent='OFFLINE';
+  document.getElementById('startBtn').disabled=false;
+  document.getElementById('stopBtn').disabled=true;
+  document.getElementById('snapBtn').disabled=true;
+  document.getElementById('snapBtn2').disabled=true;
+  log('Camera stopped');
+});
+
+// ── Mode ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('[data-m]').forEach(btn=>{
+  btn.addEventListener('click',async()=>{
+    document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const m=btn.dataset.m;
+    await fetch('/api/mode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:m})});
+    document.getElementById('modeH').textContent='MODE: '+m.toUpperCase();
+    log('Mode → '+m.toUpperCase(),'w');
+  });
+});
+
+// ── Sliders ──────────────────────────────────────────────────────────────────
+function sl(id,valId,suffix,key){
+  document.getElementById(id).addEventListener('input',function(){
+    document.getElementById(valId).textContent=this.value+suffix;
+    const p={};p[key]=parseFloat(this.value)/(suffix==='%'?100:1);
+    fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+  });
+}
+sl('bSize','bsv','px','brush_size');
+sl('eSize','esv','px','eraser_size');
+sl('opacity','opv','%','opacity');
+sl('dConf','dcv','%','detection_confidence');
+sl('tConf','tcv','%','tracking_confidence');
+
+document.getElementById('trailCk').addEventListener('change',function(){
+  fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({show_trails:this.checked})});
+});
+
+// ── Colors ───────────────────────────────────────────────────────────────────
+document.querySelectorAll('.sw').forEach(sw=>{
+  sw.addEventListener('click',()=>{
+    document.querySelectorAll('.sw').forEach(s=>s.classList.remove('a'));
+    sw.classList.add('a');
+    const c=sw.dataset.cv||sw.dataset.c;
+    fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({brush_color:c})});
+    log('Color: '+c);
+  });
+});
+
+// ── Actions ──────────────────────────────────────────────────────────────────
+document.getElementById('clearBtn').addEventListener('click',async()=>{
+  await fetch('/api/canvas/clear',{method:'POST'});
+  log('Canvas cleared','w');
+});
+
+document.getElementById('saveBtn').addEventListener('click',async()=>{
+  const r=await fetch('/api/canvas/save',{method:'POST'});
+  const d=await r.json();
+  if(d.image){
+    const a=document.createElement('a');
+    a.href='data:image/png;base64,'+d.image;
+    a.download='handsense_'+Date.now()+'.png';a.click();
+    log('Drawing exported','hi');
+  }
+});
+
+async function takeSnap(){
+  const r=await fetch('/api/snapshot',{method:'POST'});
+  const d=await r.json();
+  if(d.image){
+    const a=document.createElement('a');
+    a.href='data:image/jpeg;base64,'+d.image;
+    a.download='snap_'+Date.now()+'.jpg';a.click();
+    log('Snapshot saved','hi');
+  }
+}
+document.getElementById('snapBtn').addEventListener('click',takeSnap);
+document.getElementById('snapBtn2').addEventListener('click',takeSnap);
+
+document.getElementById('resetBtn').addEventListener('click',async()=>{
+  await fetch('/api/canvas/clear',{method:'POST'});
+  await fetch('/api/mode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'draw'})});
+  document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));
+  document.querySelector('[data-m="draw"]').classList.add('active');
+  document.getElementById('modeH').textContent='MODE: DRAW';
+  log('System reset','w');
+});
+
+document.getElementById('fullBtn').addEventListener('click',()=>{
+  const vc=document.getElementById('vc');
+  if(document.fullscreenElement) document.exitFullscreen();
+  else vc.requestFullscreen();
+});
+
+// ── Log ──────────────────────────────────────────────────────────────────────
+function log(msg,type=''){
+  const lg=document.getElementById('log');
+  const t=new Date().toTimeString().slice(0,8);
+  const d=document.createElement('div');
+  d.className='le '+(type||'');
+  d.innerHTML='<span class="lt">'+t+'</span>'+msg;
+  lg.prepend(d);
+  while(lg.children.length>80)lg.removeChild(lg.lastChild);
+}
+</script>
+</body>
+</html>
